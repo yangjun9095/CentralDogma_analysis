@@ -10,7 +10,7 @@ Prefix = '2018-08-20-hbP2P-MS2V5-2xMCP-mCherry-vasa-eGFP1';
 cp = load([FilePath,filesep,...
             Prefix,filesep,'CompiledParticles.mat']);
 
-        %% Extract useful fields from the cp
+%% Extract useful fields from the cp
 % For now, we will think about nc13, and nc14. This can be (and
 % should be) relaxed to include specific NCs
 
@@ -18,7 +18,7 @@ cp = load([FilePath,filesep,...
 Time = cp.ElapsedTime;
 nc12 = cp.nc12;
 nc13 = cp.nc13;
-nc14 = cp.nc14
+nc14 = cp.nc14;
 
 % mean spot fluorescence info
 % Note that the compiledparticles has fields inside a cell in some cases.

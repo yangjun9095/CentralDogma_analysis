@@ -15,7 +15,9 @@
 % Save those into two different structures, cytomRNA_prediction_params,
 % protein_prediciton_params
 
-function estimate_cytomRNA_protein(Prefix, varargin)
+function [Time,AccumulatedmRNA, ErrorAccumulatedmRNA, ...
+            Protein,ErrorProtein,startNC,dt,Time_interp] = ...
+                                estimate_cytomRNA_protein(Prefix, varargin)
 %% Options
 
 % Default options
@@ -355,13 +357,13 @@ StandardFigure(gcf,gca)
 Time = Time_trimmed;
 % nc13 and nc14 should be adjusted with ncStart
 
-savedVariables = {};
-savedVariables = [savedVariables,'Time','startNC','dt','Time_interp',...
-                    'AccumulatedmRNA', 'ErrorAccumulatedmRNA', ...
-                    'Protein','ErrorProtein','params'];
-               
-DropboxFolder = 'S:\YangJoon\Dropbox\CentralDogmaResults';                
-save([DropboxFolder,filesep,'cytomRNA_protein_estimated.mat'],'savedVariables', '-v7.3', '-nocompression')
+% savedVariables = {};
+% savedVariables = [savedVariables,'Time','startNC','dt','Time_interp',...
+%                     'AccumulatedmRNA', 'ErrorAccumulatedmRNA', ...
+%                     'Protein','ErrorProtein','params'];
+%                
+% DropboxFolder = 'S:\YangJoon\Dropbox\CentralDogmaResults';                
+% save([DropboxFolder,filesep,'cytomRNA_protein_estimated.mat'],'savedVariables', '-v7.3', '-nocompression')
 
                 
 end

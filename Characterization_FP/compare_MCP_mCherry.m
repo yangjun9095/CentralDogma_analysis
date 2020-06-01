@@ -7,7 +7,7 @@
 %% Load the Datasets
 %clear all
 
-DataNLS=load('D:\Data\YangJoon\LivemRNA\Data\DynamicsResults\2017-01-02-Hb-P2P-MS2-NLSmCherry\CompiledParticles.mat')
+%DataNLS=load('D:\Data\YangJoon\LivemRNA\Data\DynamicsResults\2017-01-02-Hb-P2P-MS2-NLSmCherry\CompiledParticles.mat')
 DataNoNLS=load('D:\Data\YangJoon\LivemRNA\Data\DynamicsResults\2017-01-04-Hb-P2P-MS2-mCherry\CompiledParticles.mat')
 DataNoNLS2=load('D:\Data\YangJoon\LivemRNA\Data\DynamicsResults\2017-10-16-P2P-MCP-NoNLS-mCherry\CompiledParticles.mat')
 %DataCTL=load('D:\Data\YangJoon\LivemRNA\Data\DynamicsResults\2017-01-08-Hb-P2P-HisRFP-MCP-GFP\CompiledParticles.mat')
