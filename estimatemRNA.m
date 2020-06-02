@@ -1,6 +1,6 @@
-% This script is a function that calculate the mRNA profile from the given
+% This script is a function that calculate the mRNA profile from a given
 % transcriptional rate profile (over AP, at different time points)
-function [M,T] = estimatemRNA (Rate, Dm, Tm, Time, Tmax)
+function [AccumulatedmRNA,Time] = estimatemRNA (Rate, Dm, Tm, Time, Tmax)
 %Input parameters
 % Prefix=.mat file that the mRNA profiles (over AP and time) are saved.
 % Rate : Rate of transcription initiation (over AP bin, time)
@@ -81,8 +81,7 @@ end
 
 
 
-%% colorful plot for timecourse : To see how the shape changes along the
-%time. 
+%% colorful plot for the time-course : To see how the shape changes along the time. 
 %  jStart=1;
 %  jEnd=length(T)+1;
 %  jTotal=jEnd-jStart;

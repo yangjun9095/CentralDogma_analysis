@@ -17,7 +17,7 @@
 
 function [Time,AccumulatedmRNA, ErrorAccumulatedmRNA, ...
             Protein,ErrorProtein,startNC,dt,Time_interp] = ...
-                                estimate_cytomRNA_protein(Prefix, varargin)
+                                simulate_cytomRNA_protein(Prefix, varargin)
 %% Options
 
 % Default options
