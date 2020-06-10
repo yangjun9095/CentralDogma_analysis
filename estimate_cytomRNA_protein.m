@@ -15,6 +15,10 @@
 % Save those into two different structures, cytomRNA_prediction_params,
 % protein_prediciton_params
 
+% Caveats : 1) boundary condition : for now, I'll assume that the most
+% anterior bin is expressing the amount same as the 0%-that APbin. Thus,
+% there's no net flow of mRNA/protein from that AP bin towards anterior.
+
 function [Time,AccumulatedmRNA, ErrorAccumulatedmRNA, ...
             Protein,ErrorProtein,startNC,dt,Time_interp] = ...
                                 estimate_cytomRNA_protein(Prefix, varargin)
@@ -26,9 +30,9 @@ startNC = 13; % which NC to start calculating
 % parameters for prediction/estimation
 % KEEP THE UNITS as "um" and "minutes"!
 Dm = 0; % diffusion constant (um^2/sec)
-T_half_mRNA = 60 % min
-Dp = 7 % diffusion constant (um^2/sec)
-T_half_protein = 50 % min
+T_half_mRNA = 60; % min
+Dp = 7; % diffusion constant (um^2/sec)
+T_half_protein = 50; % min
 params = [Dm, T_half_mRNA, Dp, T_half_protein];
 
 for i=1:length(varargin)
@@ -190,12 +194,18 @@ frameLength=length(Time_interp); %# of time frames.
 AccumulatedmRNA=zeros(frameLength,nAPbins);
 ErrorAccumulatedmRNA = zeros(frameLength,nAPbins);
 
-%Integrate the # of mRNA using the equation from Hernan and Jacques' paper,
-APstart = 20; % APbin start : 20%
-APend = 60; % APbin end : 60%
+% Integrate the # of mRNA using the equation from Hernan and Jacques' paper,
+% find the most anterior/posterior APbins from this measurement.
+% this is illustrated in the caveat above at the top of this script.
+% this should be revisited.
 
-APbinStart = APstart/2.5 + 1;
-APbinEnd = APend/2.5 + 1;
+% Check the peak time whether the mean spot fluo is nan or not.
+NotNaNIndex = find(~isnan(spotfluo_mean(nc14+10,:)));
+APbinStart = min(NotNaNIndex); % APbin start : 20%
+APbinEnd = max(NotNaNIndex); % APbin end : 60%
+
+% APbinStart = APstart/2.5 + 1;
+% APbinEnd = APend/2.5 + 1;
 
 tDelay = 1; % min
 tDelayIndex = tDelay/dt;
@@ -236,26 +246,26 @@ end
 
 %% plot the accumulated mRNA profile over AP
 % Color(gradation from blue to red) for each time point
-iStart=2; %Start time
-iEnd=length(Time_interp); %End time (cp.nc14:end)
-    colormap(jet(256));
-    cmap=colormap ;
-    Color=cmap(round(((iStart:iEnd)-iStart)/(iEnd-iStart)*255)+1,:);
+% iStart=2; %Start time
+% iEnd=length(Time_interp); %End time (cp.nc14:end)
+%     colormap(jet(256));
+%     cmap=colormap ;
+%     Color=cmap(round(((iStart:iEnd)-iStart)/(iEnd-iStart)*255)+1,:);
 
-figure(1)
-hold on
-for i=2:100:frameLength
-    errorbar(0:0.025:1,AccumulatedmRNA(i,:),...
-                sqrt(ErrorAccumulatedmRNA(i,:).^2),...
-                'color',Color(i-iStart+1,:))
-     %pause
-end
-hold off
-title('Accumulated mRNA along the AP axis')
-xlabel('AP axis')
-ylabel('Accumulated mRNA (Number of mRNA)')
-xlim([0.2 0.6])
-set(gca,'fontsize',30)
+% figure(1)
+% hold on
+% for i=2:100:frameLength
+%     errorbar(0:0.025:1,AccumulatedmRNA(i,:),...
+%                 sqrt(ErrorAccumulatedmRNA(i,:).^2),...
+%                 'color',Color(i-iStart+1,:))
+%      %pause
+% end
+% hold off
+% title('Accumulated mRNA along the AP axis')
+% xlabel('AP axis')
+% ylabel('Accumulated mRNA (Number of mRNA)')
+% xlim([0.2 0.6])
+% set(gca,'fontsize',30)
 %colorbar
 
 %% Calculate the Protein using numerical simulation
@@ -312,49 +322,74 @@ for i=startFrame:frameLength  %for all Timepoints
                             rp*ErrorAccumulatedmRNA(i-1,APbinStart).^2*dt);
 end
 
-figure(2)
-hold on
-for i=3:100:frameLength
-    errorbar(0:0.025:1,Protein(i,:),ErrorProtein(i,:),'color',Color(i-iStart+1,:))
-end
-hold off
-title('Predicted protein along the AP axis')
-xlabel('AP axis')
-ylabel('Predicted Protein (Number of protein molecules)')
-xlim([0.2 0.6])
-set(gca,'fontsize',30)
-colorbar
+% figure(2)
+% hold on
+% for i=3:100:frameLength
+%     errorbar(0:0.025:1,Protein(i,:),ErrorProtein(i,:),'color',Color(i-iStart+1,:))
+% end
+% hold off
+% title('Predicted protein along the AP axis')
+% xlabel('AP axis')
+% ylabel('Predicted Protein (Number of protein molecules)')
+% xlim([0.2 0.6])
+% set(gca,'fontsize',30)
+% colorbar
 
 %% Plot the cyto mRNA and protein for 
 %% cytomRNA - prediction
-APbin = 11; % 20%
-% 0.66 min is our temporal resolution, so we will just plot roughly similar
-% time points
-tRes = median(diff(Time));
-tSteps = floor(tRes/dt); 
-
-tWindow = 1:tSteps:length(Time_interp);
-errorbar(Time_interp(tWindow),...
-        AccumulatedmRNA(tWindow,APbin),...
-        ErrorAccumulatedmRNA(tWindow,APbin),'r')
-title('Accumulated mRNA - 25% EL')
-xlabel('time into nc 13(min)')
-ylabel('Accumulated mRNA (AU)')
-StandardFigure(gcf,gca)
+% APbin = 11; % 20%
+% % 0.66 min is our temporal resolution, so we will just plot roughly similar
+% % time points
+% tRes = median(diff(Time));
+% tSteps = floor(tRes/dt); 
+% 
+% tWindow = 1:tSteps:length(Time_interp);
+% errorbar(Time_interp(tWindow),...
+%         AccumulatedmRNA(tWindow,APbin),...
+%         ErrorAccumulatedmRNA(tWindow,APbin),'r')
+% title('Accumulated mRNA - 25% EL')
+% xlabel('time into nc 13(min)')
+% ylabel('Accumulated mRNA (AU)')
+% StandardFigure(gcf,gca)
 %% protein - prediction
-APbin = 11; % 20%
-tWindow = 1:tSteps:length(Time_interp);
+% APbin = 11; % 20%
+% tWindow = 1:tSteps:length(Time_interp);
+% 
+% errorbar(Time_interp(tWindow),...
+%         Protein(tWindow,APbin),...
+%         ErrorProtein(tWindow,APbin))
+% title(' protein-prediction- 25% EL')
+% xlabel('time into nc 13(min)')
+% ylabel('protein (AU)')
+% StandardFigure(gcf,gca)
 
-errorbar(Time_interp(tWindow),...
-        Protein(tWindow,APbin),...
-        ErrorProtein(tWindow,APbin))
-title(' protein-prediction- 25% EL')
-xlabel('time into nc 13(min)')
-ylabel('protein (AU)')
-StandardFigure(gcf,gca)
+%% Interpolate again for the measured ElapsedTime (tRes)
+% This is because we don't actually need dt resolved prediction, but with
+% spacing as tRes as our measurement.
+AccumulatedmRNA_temp = interp1(Time_interp, Protein, Time_trimmed);
+ErrorAccumulatedmRNA_temp = interp1(Time_interp, ErrorProtein, Time_trimmed);
+
+Protein_temp = interp1(Time_interp, Protein, Time_trimmed);
+ErrorProtein_temp = interp1(Time_interp, ErrorProtein, Time_trimmed);
+
 
 %% Clean up the variables to save for further analysis
 Time = Time_trimmed;
+
+AccumulatedmRNA = AccumulatedmRNA_temp;
+ErrorAccumulatedmRNA = ErrorAccumulatedmRNA_temp;
+
+Protein = Protein_temp;
+ErrorProtein = ErrorProtein_temp;
+
+% Convert zeros to NaNs, this is for the APbins that we don't take into
+% account.
+AccumulatedmRNA(AccumulatedmRNA==0) = nan;
+%ErrorAccumulatedmRNA(ErrorAccumulatedmRNA==0) = nan;
+
+Protein(Protein==0) = nan;
+%ErrorProtein(ErrorProtein==0) = nan;
+
 % nc13 and nc14 should be adjusted with ncStart
 
 % savedVariables = {};
