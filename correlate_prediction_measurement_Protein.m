@@ -79,69 +79,394 @@ nc14 = cn.nc14 - cn.nc13;
 %% Step2. Calculate the predicted protein
 
 % Diffusion
-Dm = [0,1,10,100]; % diffusion constant (um^2/sec)
-Dp = [0,1,10,100];% diffusion constant (um^2/sec)
+Dm = logspace(0,100,20);% diffusion constant (um^2/sec)
+Dp = logspace(0,100,20);% diffusion constant (um^2/sec)
+
+% Dm = [0:0.5:1,5,10,50,100];% diffusion constant (um^2/sec)
+% Dp = [0:0.5:1,5,10,50,100];% diffusion constant (um^2/sec)
+% [0:0.1:1, 2:1:10,20:10:100];% diffusion constant (um^2/sec)
 
 % half-life
-T_half_mRNA = [1,10,100,1000];% min
-T_half_protein = [1,10,100,1000]; % min
+T_half_mRNA = 60;% min
+T_half_protein = logspace(1,1000,20);
+%[1,10,50,100,500,1000]; % min
 
 
-params = [Dm, T_half_mRNA, Dp, T_half_protein];
+% params = [Dm, T_half_mRNA, Dp, T_half_protein];
 
 % This step of defining the parameter should be done in a more systematic
 % way. For example, for picking values one by one from n-dimensional matrix
+h = waitbar(0,'Please wait...');
 
 for i=1:length(Dm)
     for j=1:length(Dp)
-        for k=1:length(T_half_mRNA)
-            for l=1:length(T_half_protein)
-                % define the parameters
-                params = [Dm(i), T_half_mRNA(k), Dp(j), T_half_protein(l)];
-                % calculate the correlation coefficient (Pearson)
-                [Pearson_corr,~,~,~,~] = calculate_PearsonCorr_prediction_measurement_Protein(Prefix,...
-                                                params,nucfluo_mean_BGsubt,nucfluo_sem);
-                Corr_Coeff(i,j,k,l) = Pearson_corr;
-            end
+        for k=1:length(T_half_protein)
+            % define the parameters
+            params = [Dm(i), T_half_mRNA, Dp(j), T_half_protein(k)];
+            % calculate the correlation coefficient (Pearson)
+            [Pearson_corr,~,~,~,~] = calculate_PearsonCorr_prediction_measurement_Protein(Prefix,...
+                                            params,nucfluo_mean_BGsubt,nucfluo_sem);
+            Corr_Coeff(i,j,k) = Pearson_corr;
         end
     end
+    waitbar(i/20,h)
 end
 
+%% Ideas
 %% Gunawardena/Depace, Estrada 2016 approach?
 % can we visualize the results in 2D?
 
+%% Can we do the MCMC in this result for the parameter estimation?
+
 %% Plot the Correlation Coefficient for a combination of 3 parameters
 % pick the mRNA half life of 100 min,
-Corr_hb = squeeze(Corr_Coeff(:,:,4,:))
-% [X,Y,Z] = ndgrid(1:size(Corr_hb,1), 1:size(Corr_hb,2), 1:size(Corr_hb,3));
-hm_cm = flipud(brewermap(1000,'Spectral'));
 
+cmap = viridis
+
+% process the corr.coeff for values that are too small.
+corr_thresh = 0.75;
+Corr_Coeff_hb = Corr_Coeff;
+Corr_Coeff_hb(Corr_Coeff_hb < corr_thresh) = nan;
 
 hold on
-colorbar(hm_cm);
 for i=1:length(Dm)
     for j=1:length(Dp)
-        for l=1:length(T_half_protein)
-            scatter3(Dm(i), Dp(j), T_half_protein(l),'o','MarkerFaceColor',hm_cm(floor(Corr_hb(i,j,l)*1000)+1,:),'MarkerEdgeColor','black')
+        for k=1:length(T_half_protein)
+            scatter3(Dm(i), Dp(j), T_half_protein(k),...
+                abs(Corr_Coeff_hb(i,j,k) - 0.75)*1000,...
+                    'MarkerFaceColor',[213,108,85]/255,...
+                    'MarkerEdgeColor','black',...
+                    'MarkerFaceAlpha',0.85)%,...
+                    %'MarkerFaceAlpha',Corr_Coeff(i,j,k))
+                    %'MarkerSize',20*Corr_Coeff(i,j,k))
+            %'MarkerFaceColor',cmap(floor(Corr_hb(i,j,k)*256)+1,:))%,'MarkerEdgeColor','black')
         end
     end
 end
 view(-30,30)
 
 grid on
-xlabel('D_{m}')
-ylabel('D_{p}')
-zlabel('T_{1/2, protein}')
+
+xlabel('D_{m} (\mu m^2/sec)')
+ylabel('D_{p} (\mu m^2/sec)')
+zlabel('T_{p} (min)')
 set(gca,'XScale','log')
 set(gca,'YScale','log')
 set(gca,'ZScale','log')
 
-%% plot in 2D
-[X,Y] = meshgrid(Dp,T_half_protein)
-Z = squeeze(Corr_Coeff(1,3,:,:));
-surf(X,Y,squeeze(Corr_Coeff(1,3,:,:)))
+% control the viewpoint
+view(-40,40)
+
+xh = get(gca,'XLabel'); % Handle of the x label
+set(xh, 'Units', 'Normalized')
+pos = get(xh, 'Position');
+set(xh, 'Position',pos.*[1.1,-0.9,0],'Rotation',25)
+
+yh = get(gca,'YLabel'); % Handle of the y label
+set(yh, 'Units', 'Normalized')
+pos = get(yh, 'Position');
+set(yh, 'Position',pos.*[1,0.5,0.5],'Rotation',-35)
+
+% color bar
+% cb = colorbar
+% set(cb,'XTick',[0.75 0.8 0.85 0.9 0.95])
+
+% grid
+grid on
+set(gca, 'GridAlpha',1)% maximum line opacityset(gca, 'GridAlpha',1)% maximum line opacity
 
 
+StandardFigure(gcf,gca)
+set(gca,'FontSize',12)
+% save figure
+saveas(gcf, [figPath, filesep, 'Corr_Coeff_3params','.tif'])
+saveas(gcf, [figPath, filesep, 'Corr_Coeff_3params','.pdf'])
+
+%% Show only the points that are bigger than some threshold of Corr.Coeff.
+cmap = viridis
+
+% process the corr.coeff for values that are too small.
+corr_thresh = 0.9;
+Corr_Coeff_hb = Corr_Coeff;
+Corr_Coeff_hb(Corr_Coeff_hb < corr_thresh) = nan;
+
+hold on
+for i=1:length(Dm)
+    for j=1:length(Dp)
+        for k=1:length(T_half_protein)
+            scatter3(Dm(i), Dp(j), T_half_protein(k),...
+                abs(Corr_Coeff_hb(i,j,k) - 0.75)*1000,...
+                    'MarkerFaceColor',[213,108,85]/255,...
+                    'MarkerEdgeColor','black',...
+                    'MarkerFaceAlpha',0.85)%,...
+                    %'MarkerFaceAlpha',Corr_Coeff(i,j,k))
+                    %'MarkerSize',20*Corr_Coeff(i,j,k))
+            %'MarkerFaceColor',cmap(floor(Corr_hb(i,j,k)*256)+1,:))%,'MarkerEdgeColor','black')
+        end
+    end
+end
+view(-30,30)
+
+grid on
+
+xlabel('D_{m} (\mu m^2/sec)')
+ylabel('D_{p} (\mu m^2/sec)')
+zlabel('T_{p} (min)')
+set(gca,'XScale','log')
+set(gca,'YScale','log')
+set(gca,'ZScale','log')
+
+% control the viewpoint
+view(-40,40)
+
+xh = get(gca,'XLabel'); % Handle of the x label
+set(xh, 'Units', 'Normalized')
+pos = get(xh, 'Position');
+set(xh, 'Position',pos.*[1.1,-0.9,0],'Rotation',25)
+
+yh = get(gca,'YLabel'); % Handle of the y label
+set(yh, 'Units', 'Normalized')
+pos = get(yh, 'Position');
+set(yh, 'Position',pos.*[1,0.5,0.5],'Rotation',-35)
+
+% color bar
+% cb = colorbar
+% set(cb,'XTick',[0.75 0.8 0.85 0.9 0.95])
+
+% grid
+grid on
+set(gca, 'GridAlpha',1)% maximum line opacityset(gca, 'GridAlpha',1)% maximum line opacity
+
+
+StandardFigure(gcf,gca)
+set(gca,'FontSize',12)
+% save figure
+saveas(gcf, [figPath, filesep, 'Corr_Coeff_3params_0.95_filtered','.tif'])
+saveas(gcf, [figPath, filesep, 'Corr_Coeff_3params_0.95_filtered','.pdf'])
+
+%% Sensitivity analysis
+% Fix two parameters, then see how the Corr.Coeff. changes for the other
+% two parameters.
+
+%% First, let's fix the mRNA parameters, then change the protein parameters
+Dm = 0; % diffusion constant (um^2/sec)
+T_half_mRNA = 60; % min
+
+% Diffusion
+Dp = [0:0.1:1, 2:1:10,20:10:100];% diffusion constant (um^2/sec)
+% half-life
+T_half_protein = [1:10,20:10:100,200:100:1000]; % min
+
+
+% params = [Dm, T_half_mRNA, Dp, T_half_protein];
+
+% This step of defining the parameter should be done in a more systematic
+% way. For example, for picking values one by one from n-dimensional matrix
+
+for i=1:length(Dp)
+    for j=1:length(T_half_protein)
+        % define the parameters
+        params = [Dm, T_half_mRNA, Dp(i), T_half_protein(j)];
+        % calculate the correlation coefficient (Pearson)
+        [Pearson_corr,~,~,~,~] = calculate_PearsonCorr_prediction_measurement_Protein(Prefix,...
+                                        params,nucfluo_mean_BGsubt,nucfluo_sem);
+        Corr_prot_params(i,j) = Pearson_corr;
+    end
+end
+
+%% Surface Plot the corr.coeff in 3D (for protein parameters)
+[X,Y] = meshgrid(T_half_protein, Dp)
+
+surf(X,Y,Corr_prot_params)
+
+% colormap with linear scale
+colormap viridis
+
+% label the axes
+xlabel('Protein half-life (min)')
+ylabel('D_{p} (\mu m^2/sec)')
+zlabel('Corr.Coefficient')
+
+% set the X, Y axes in log-scale
+set(gca,'Xscale','log')
+set(gca,'Yscale','log')
+
+% control the viewpoint
+view(-40,60)
+
+xh = get(gca,'XLabel'); % Handle of the x label
+set(xh, 'Units', 'Normalized')
+pos = get(xh, 'Position');
+set(xh, 'Position',pos.*[1.1,-0.9,0],'Rotation',25)
+
+yh = get(gca,'YLabel'); % Handle of the y label
+set(yh, 'Units', 'Normalized')
+pos = get(yh, 'Position');
+set(yh, 'Position',pos.*[1,0.5,0.5],'Rotation',-35)
+
+% color bar
+cb = colorbar
+set(cb,'XTick',[0.75 0.8 0.85 0.9 0.95])
+
+% grid
+grid on
+set(gca, 'GridAlpha',1)% maximum line opacity
+
+StandardFigure(gcf,gca)
+set(gca,'FontSize',12)
+% save figure
+saveas(gcf, [figPath, filesep, 'Corr_Coeff_prot_params','.tif'])
+saveas(gcf, [figPath, filesep, 'Corr_Coeff_prot_params','.pdf'])
+
+%% Second, let's fix the protein parameters, then change the mRNA parameters
+Dp = 7; % diffusion constant (um^2/sec)
+T_half_protein = 50; % min
+
+% Diffusion
+Dm = [0:0.1:1, 2:1:10,20:10:100];% diffusion constant (um^2/sec)
+% half-life
+T_half_mRNA = [1:10,20:10:100,200:100:1000]; % min
+
+
+% params = [Dm, T_half_mRNA, Dp, T_half_protein];
+
+% This step of defining the parameter should be done in a more systematic
+% way. For example, for picking values one by one from n-dimensional matrix
+
+for i=1:length(Dm)
+    for j=1:length(T_half_mRNA)
+        % define the parameters
+        params = [Dm(i), T_half_mRNA(j), Dp, T_half_protein];
+        % calculate the correlation coefficient (Pearson)
+        [Pearson_corr,~,~,~,~] = calculate_PearsonCorr_prediction_measurement_Protein(Prefix,...
+                                        params,nucfluo_mean_BGsubt,nucfluo_sem);
+        Corr_mRNA_params(i,j) = Pearson_corr;
+    end
+end
+
+%% Surface Plot the corr.coeff in 3D (for protein parameters)
+[X,Y] = meshgrid(T_half_mRNA, Dm)
+
+surf(X,Y,Corr_mRNA_params)
+
+% color map with linear color scheme
+colormap viridis
+
+
+% label the axes
+xlabel('mRNA half-life (min)')
+ylabel('D_{m} (\mu m^2/sec)')
+zlabel('Corr.Coefficient')
+
+% set the X, Y axes in log-scale
+set(gca,'Xscale','log')
+set(gca,'Yscale','log')
+
+% control the viewpoint
+view(-40,60)
+
+xh = get(gca,'XLabel'); % Handle of the x label
+set(xh, 'Units', 'Normalized')
+pos = get(xh, 'Position');
+set(xh, 'Position',pos.*[0.9,-10,1],'Rotation',25)
+
+yh = get(gca,'YLabel'); % Handle of the y label
+set(yh, 'Units', 'Normalized')
+pos = get(yh, 'Position');
+set(yh, 'Position',pos.*[1,0.5,0.5],'Rotation',-35)
+
+% color bar
+cb = colorbar
+set(cb,'XTick',[0.8 0.85 0.9 0.95])
+
+% grid
+grid on
+set(gca, 'GridAlpha',1)% maximum line opacity
+
+StandardFigure(gcf,gca)
+set(gca,'FontSize',12)
+
+% save figure
+saveas(gcf, [figPath, filesep, 'Corr_Coeff_mRNA_params','.tif'])
+saveas(gcf, [figPath, filesep, 'Corr_Coeff_mRNA_params','.pdf'])
+
+%% Third, can mRNA diffusion compensate the protein diffusion?
+% The question is basically to see whether we can distinguish the effect of
+% mRNA diffusion and protein diffusion
+
+% set the Diffusion of protein to be zero, then see whether we can predict
+% the pattern with similar Correlation Coeff. only with mRNA parameters.
+
+Dp = 0; % diffusion constant (um^2/sec)
+T_half_protein = 50; % min
+
+% Diffusion
+Dm = [0:0.1:1, 2:1:10,20:10:100];% diffusion constant (um^2/sec)
+% half-life
+T_half_mRNA = [1:10,20:10:100,200:100:1000]; % min
+
+
+% params = [Dm, T_half_mRNA, Dp, T_half_protein];
+
+% This step of defining the parameter should be done in a more systematic
+% way. For example, for picking values one by one from n-dimensional matrix
+
+for i=1:length(Dm)
+    for j=1:length(T_half_mRNA)
+        % define the parameters
+        params = [Dm(i), T_half_mRNA(j), Dp, T_half_protein];
+        % calculate the correlation coefficient (Pearson)
+        [Pearson_corr,~,~,~,~] = calculate_PearsonCorr_prediction_measurement_Protein(Prefix,...
+                                        params,nucfluo_mean_BGsubt,nucfluo_sem);
+        Corr_mRNA_params(i,j) = Pearson_corr;
+    end
+end
+
+%% Surface Plot the corr.coeff in 3D (for protein parameters)
+[X,Y] = meshgrid(T_half_mRNA, Dm)
+
+surf(X,Y,Corr_mRNA_params)
+
+% color map with linear color scheme
+colormap viridis
+
+
+% label the axes
+xlabel('mRNA half-life (min)')
+ylabel('D_{m} (\mu m^2/sec)')
+zlabel('Corr.Coefficient')
+
+% set the X, Y axes in log-scale
+set(gca,'Xscale','log')
+set(gca,'Yscale','log')
+
+% control the viewpoint
+view(-40,60)
+
+xh = get(gca,'XLabel'); % Handle of the x label
+set(xh, 'Units', 'Normalized')
+pos = get(xh, 'Position');
+set(xh, 'Position',pos.*[0.9,-10,1],'Rotation',25)
+
+yh = get(gca,'YLabel'); % Handle of the y label
+set(yh, 'Units', 'Normalized')
+pos = get(yh, 'Position');
+set(yh, 'Position',pos.*[1,0.5,0.5],'Rotation',-35)
+
+% color bar
+cb = colorbar
+set(cb,'XTick',[0.8 0.85 0.9 0.95])
+
+% grid
+grid on
+set(gca, 'GridAlpha',1)% maximum line opacity
+
+StandardFigure(gcf,gca)
+set(gca,'FontSize',12)
+
+% save figure
+saveas(gcf, [figPath, filesep, 'Corr_Coeff_mRNA_params_noProteinDiffusion','.tif'])
+saveas(gcf, [figPath, filesep, 'Corr_Coeff_mRNA_params_noProteinDiffusion','.pdf'])
 
 %% (Optional) Plotting the Prediciton/Measurement/Correlation for a couple of set of parameters as an example. 
 %% generate plots from a set of parameters (hb and/or eve)
