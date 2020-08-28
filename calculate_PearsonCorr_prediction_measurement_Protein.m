@@ -2,8 +2,7 @@
 function [Corr_Coeff, PredictedProtein, PredictedProtein_error,...
           MeasuredProtein, MeasuredProtein_error] = ...
                     calculate_PearsonCorr_prediction_measurement_Protein(Prefix,...
-                                            params,nucfluo_mean_BGsubt,nucfluo_sem)   
-                            
+                                            params,nucfluo_mean_BGsubt,nucfluo_sem)                               
 %% Description
 % This function takes inputs of Prefix, and parameters for the
 % Reaction-Diffusion model, then calculates the Pearson correlation

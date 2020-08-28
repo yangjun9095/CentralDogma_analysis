@@ -50,6 +50,11 @@ F_RNAP = Velong*MeanOnRegion13/OnRegionFISHFit*(1/(L1 + L2)); % [AU/RNAP]
 F_RNAP_error = Velong*SEOnRegion13/OnRegionFISHFit*(1/(L1 + L2)); %[AU/RNAP]
 
 laserPower = 25; % [uW]
+
+%% Laser power correction
+% Since we used 20uW for our data acquisition (all the other imaging
+% condition are exactly the same)
+
 %% save the result
 
 % filePath
